@@ -15,12 +15,15 @@ import { browser } from 'webextension-polyfill-ts';
 
 import { AccentDisplay, PartOfSpeechDisplay } from './content-config';
 import {
+  getOrCreateEmptyContainer,
+  removeContentContainer,
+} from './content-container';
+import {
   CopyKeys,
   CopyType,
   CopyKanjiKeyStrings,
   CopyNextKeyStrings,
 } from './copy-keys';
-import { getHash } from './hash';
 import { convertMeasure, MeasureMeta } from './measure';
 import { SelectionMeta } from './meta';
 import { NamePreview, QueryResult } from './query';
@@ -30,7 +33,7 @@ import {
   ReferenceAbbreviation,
 } from './refs';
 import { NameResult, Sense, WordResult } from './search-result';
-import { isForeignObjectElement, isSvgDoc, SVG_NS } from './svg';
+import { SVG_NS } from './svg';
 import { EraInfo, EraMeta, getEraInfo } from './years';
 
 import popupStyles from '../css/popup.css';
@@ -74,7 +77,8 @@ export function renderPopup(
 ): HTMLElement | null {
   const doc = options.document || document;
   const container = options.container || getDefaultContainer(doc);
-  const windowElem = resetContainer(container, {
+  const windowElem = resetContainer({
+    container,
     document: doc,
     popupStyle: options.popupStyle,
   });
@@ -180,100 +184,23 @@ export function renderPopup(
 }
 
 function getDefaultContainer(doc: Document): HTMLElement {
-  // Look for an existing container
-  const existingContainers = doc.querySelectorAll(
-    '#rikaichamp-window, #tenten-ja-window'
-  );
-  if (existingContainers.length) {
-    // Drop any duplicate containers
-    while (existingContainers.length > 1) {
-      existingContainers[1].remove();
-    }
-    return existingContainers[0] as HTMLElement;
-  }
-
-  // Create a new container
-
-  // For SVG documents we put container <div> inside a <foreignObject>.
-  let parent: Element;
-  if (isSvgDoc(doc)) {
-    const foreignObject = doc.createElementNS(SVG_NS, 'foreignObject');
-    foreignObject.setAttribute('width', '600');
-    foreignObject.setAttribute('height', '100%');
-    doc.documentElement.append(foreignObject);
-    parent = foreignObject;
-  } else {
-    parent = doc.documentElement;
-  }
-
-  // Actually create the container element
-  const container = doc.createElement('div');
-  container.id = 'tenten-ja-window';
-  parent.append(container);
-
-  // Apply minimal container styles
-  //
-  // All the interesting styles go on the inner 'window' object. The styles here
-  // are just used for positioning the pop-up correctly.
-  //
-  // First reset all styles the page may have applied.
-  container.style.all = 'initial';
-  container.style.position = 'absolute';
-  // asahi.com puts z-index: 1000000 on its banner ads. We go one better.
-  container.style.zIndex = '1000001';
-  // Make sure the drop shadow doesn't get cut off
-  container.style.paddingRight = '4px';
-  container.style.paddingBottom = '4px';
-
-  // Set initial position
-  container.style.top = '5px';
-  container.style.left = '5px';
-  container.style.minWidth = '100px';
-
-  // Enforce any max-height set on the container.
-  container.style.overflowY = 'hidden';
-
-  // Make sure the container too doesn't receive pointer events
-  container.style.pointerEvents = 'none';
-
-  return container;
+  return getOrCreateEmptyContainer({
+    doc,
+    id: 'tenten-ja-window',
+    legacyIds: ['rikaichamp-window'],
+    styles: popupStyles.toString(),
+  });
 }
 
-function resetContainer(
-  container: HTMLElement,
-  { document: doc, popupStyle }: { document: Document; popupStyle: string }
-): HTMLElement {
-  if (!container.shadowRoot) {
-    container.attachShadow({ mode: 'open' });
-
-    // Add <style>
-    const style = doc.createElement('style');
-    style.textContent = popupStyles;
-    style.dataset.hash = getStyleHash();
-    container.shadowRoot!.append(style);
-  } else {
-    // Reset content
-    for (const child of container.shadowRoot!.children) {
-      if (child.tagName !== 'STYLE') {
-        child.remove();
-      }
-    }
-
-    // Reset style
-    let existingStyle = container.shadowRoot.querySelector('style');
-    if (existingStyle && existingStyle.dataset.hash !== getStyleHash()) {
-      existingStyle.remove();
-      existingStyle = null;
-    }
-
-    if (!existingStyle) {
-      const style = doc.createElement('style');
-      style.textContent = popupStyles;
-      style.dataset.hash = getStyleHash();
-      container.shadowRoot!.append(style);
-    }
-  }
-
+function resetContainer({
+  container,
+  document: doc,
+  popupStyle,
+}: {
+  container: HTMLElement;
+  document: Document;
+  popupStyle: string;
+}): HTMLElement {
   const windowDiv = doc.createElement('div');
   windowDiv.classList.add('window');
 
@@ -281,8 +208,8 @@ function resetContainer(
   if (popupStyle !== 'default') {
     windowDiv.classList.add(`-${popupStyle}`);
   } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    // We don't bother registering an event listener for this since the popup is
-    // so short-lived.
+    // We don't bother registering an event listener for the
+    // prefers-color-scheme media query since the popup is so short-lived.
     windowDiv.classList.add('-black');
   } else {
     windowDiv.classList.add('-light');
@@ -293,70 +220,43 @@ function resetContainer(
     windowDiv.classList.add('touch');
   }
 
-  container.shadowRoot!.append(windowDiv);
+  if (container.shadowRoot) {
+    container.shadowRoot.append(windowDiv);
+  } else {
+    container.append(windowDiv);
+  }
 
   // Reset the container position so we can consistently measure the size of
   // the popup
   container.style.left = '5px';
   container.style.top = '5px';
-  container.style.maxWidth = 'initial';
-  container.style.maxHeight = 'initial';
+  container.style.minWidth = '100px';
+
+  // Reset the container position and size so that we can consistently measure
+  // the size of the popup.
+  container.style.removeProperty('left');
+  container.style.removeProperty('top');
+  container.style.removeProperty('max-width');
+  container.style.removeProperty('max-height');
 
   return windowDiv;
 }
 
-let styleHash: string | undefined;
-
-function getStyleHash(): string {
-  if (!styleHash) {
-    styleHash = getHash(popupStyles.toString());
-  }
-
-  return styleHash;
-}
-
 export function isPopupVisible(): boolean {
-  const popup = document.getElementById('tenten-ja-window');
-  if (!popup || !popup.shadowRoot) {
-    return false;
-  }
-
-  const windowElem = popup.shadowRoot.querySelector('.window');
-  return !!windowElem && !windowElem.classList.contains('hidden');
+  const popupWindow = getPopupWindow();
+  return !!popupWindow && !popupWindow.classList.contains('hidden');
 }
 
 export function hidePopup() {
-  const popup = document.getElementById('tenten-ja-window');
-  if (!popup || !popup.shadowRoot) {
-    return;
-  }
-
-  const windowElem = popup.shadowRoot.querySelector('.window');
-  if (windowElem) {
-    windowElem.classList.add('hidden');
-  }
+  getPopupWindow()?.classList.add('hidden');
 }
 
 export function removePopup() {
-  let popup = document.querySelector('#rikaichamp-window, #tenten-ja-window');
-  while (popup) {
-    // If we are in an SVG document, remove the wrapping <foreignObject>.
-    if (isForeignObjectElement(popup.parentElement)) {
-      popup.parentElement.remove();
-    } else {
-      popup.remove();
-    }
-    popup = document.querySelector('#rikaichamp-window, #tenten-ja-window');
-  }
+  removeContentContainer(['rikaichamp-window', 'tenten-ja-window']);
 }
 
 export function setPopupStyle(style: string) {
-  const popup = document.getElementById('tenten-ja-window');
-  if (!popup || !popup.shadowRoot) {
-    return;
-  }
-
-  const windowElem = popup.shadowRoot.querySelector('.window');
+  const windowElem = getPopupWindow();
   if (!windowElem) {
     return;
   }
@@ -462,6 +362,12 @@ function renderCloseButton(onClosePopup: () => void): HTMLElement {
   closeButton.append(crossSvg);
 
   return close;
+}
+function getPopupWindow(): HTMLElement | null {
+  const contentContainer = document.getElementById('tenten-ja-window');
+  return contentContainer && contentContainer.shadowRoot
+    ? contentContainer.shadowRoot.querySelector('.window')
+    : null;
 }
 
 function renderWordEntries({

@@ -1,10 +1,26 @@
 @charset "UTF-8";
+@import 'themes.css';
 
 *:lang(en),
 *:lang(fr),
 *:lang(es) {
   /* Meiryo renders more crisply than Arial on Windows */
   font-family: Meiryo, sans-serif;
+}
+
+:host {
+  position: absolute !important;
+  /* asahi.com puts z-index: 1000000 on its banner ads. We go one better. */
+  z-index: 1000001 !important;
+  /* Make sure the drop shadow doesn't get cut off */
+  padding-right: 4px !important;
+  padding-bottom: 4px !important;
+
+  /* Enforce any max-height set on the popup container. */
+  overflow-y: hidden !important;
+
+  /* Make sure the popup container too doesn't receive pointer events */
+  pointer-events: none !important;
 }
 
 .window {
@@ -866,176 +882,4 @@
 .wordlist .meta.measure .alt {
   opacity: 0.6;
   margin-top: 3px;
-}
-
-/*
- * Theme - light
- */
-
-.window.-light {
-  --text-color: #1d1a19;
-  --bg-color: #fefef2;
-  --border-color: #b1ad96;
-
-  --primary-highlight: #c11f2a;
-  --reading-highlight: #615f52;
-  --conj-color: #ad565c;
-
-  --tag-border: rgba(0, 0, 0, 0.3);
-
-  --title-fg: var(--text-color);
-  --title-bg: #ede7c9;
-
-  --reading-label: #918d7b;
-  --okurigana-color: #ad565c;
-  --cell-highlight-bg: #ede7c9;
-  --cell-highlight-fg: #3e3a39;
-
-  --selected-bg: #fff8bf;
-  --selected-reading-highlight: #3e3a39;
-
-  --meta-bg: var(--cell-highlight-bg);
-  --status-bg: var(--cell-highlight-bg);
-}
-
-.window.-light .w-def .tag-fem,
-.window.-light .w-def .w-dial {
-  background: #f24b5922;
-  color: #7a282f;
-  --tag-border: #f24b5966;
-}
-
-.window.-light .w-def .tag-masc,
-.window.-light .w-def .w-misc {
-  background: #2698fb22;
-  color: #144977;
-  --tag-border: #2698fbaa;
-}
-
-.window.-light .w-def .tag-place,
-.window.-light .w-def .w-field {
-  background: #43a04722;
-  color: #215723;
-  --tag-border: #43a047aa;
-}
-
-/*
- * Theme - blue
- */
-
-.window.-blue {
-  --text-color: white;
-  --bg-color: #446ea0;
-  --border-color: #17588e;
-
-  --primary-highlight: #bcdffe;
-  --reading-highlight: #c0ffc0;
-  --conj-color: #fff394;
-
-  --tag-border: rgba(255, 255, 255, 0.4);
-
-  --title-bg: var(--cell-highlight-bg);
-  --title-fg: var(--text-color);
-
-  --reading-label: #e7ffe7;
-  --okurigana-color: #a8cfef;
-  --cell-highlight-bg: #17588e;
-  --cell-highlight-fg: var(--primary-highlight);
-
-  --selected-highlight: var(--bg-color);
-
-  --status-bg: rgba(255, 255, 255, 0.2);
-  --meta-bg: rgba(255, 255, 255, 0.2);
-}
-
-/*
- * Theme - black
- */
-
-.window.-black {
-  --text-color: white;
-  --bg-color: #3e3a39;
-  --border-color: #999493;
-
-  --primary-highlight: #65b7fc;
-  --reading-highlight: #a5d6a7;
-  --conj-color: #817470;
-
-  --tag-border: rgba(255, 255, 255, 0.4);
-
-  --title-bg: #1d1a19;
-  --title-fg: #ede8e6;
-
-  --reading-label: #e7ffe7;
-  --okurigana-color: #ede8e6;
-  --cell-highlight-bg: #5d5857;
-  --cell-highlight-fg: #ede8e6;
-
-  --selected-highlight: #2277d9;
-
-  --status-bg: rgba(255, 255, 255, 0.2);
-  --meta-bg: rgba(255, 255, 255, 0.2);
-}
-
-.window.-black .kanji-table:not(.-copy) .kanji {
-  text-shadow: rgba(255, 255, 255, 0.2) 1px 1px 4px;
-}
-
-/*
- * Theme - lightblue
- */
-
-.window.-lightblue {
-  --text-color: #1d1a19;
-  --bg-color: #e3f2fe;
-  --border-color: #65b7fc;
-
-  --primary-highlight: #17588e;
-  --reading-highlight: #2e7d32;
-  --conj-color: #817470;
-
-  --tag-border: rgba(0, 0, 0, 0.3);
-
-  --title-fg: var(--text-color);
-  --title-bg: #bcdffe;
-
-  --reading-label: #1b5e20;
-  --okurigana-color: #706c6b;
-  --cell-highlight-bg: #cae6fc;
-  --cell-highlight-fg: var(--primary-highlight);
-
-  --selected-highlight: var(--primary-highlight);
-
-  --meta-bg: var(--cell-highlight-bg);
-  --status-bg: var(--cell-highlight-bg);
-}
-
-/*
- * Theme - yellow
- */
-
-.window.-yellow {
-  --text-color: #1d1a19;
-  --bg-color: #fff8bf;
-  --border-color: #ffd600;
-
-  --primary-highlight: #17588e;
-  --reading-highlight: #2e7d32;
-  --conj-color: #fc7600;
-
-  --tag-border: rgba(0, 0, 0, 0.3);
-
-  --title-bg: #fffde5;
-  --title-fg: var(--text-color);
-
-  --reading-label: #1b5e20;
-  --okurigana-color: #fc7600;
-  --cell-highlight-bg: #fffde5;
-  --cell-highlight-fg: #3e3a39;
-
-  --selected-bg: #e3f2fe;
-  --selected-highlight: var(--primary-highlight);
-
-  --meta-bg: var(--cell-highlight-bg);
-  --status-bg: var(--cell-highlight-bg);
 }

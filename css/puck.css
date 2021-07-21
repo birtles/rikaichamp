@@ -1,0 +1,26 @@
+@charset "UTF-8";
+@import 'themes.css';
+
+:root,
+:host {
+  --tenten-puck-safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --tenten-puck-safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --tenten-puck-safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --tenten-puck-safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
+
+.puck {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 50px;
+  height: 50px;
+  box-sizing: border-box;
+  /* We use a z-index one higher than the popup */
+  z-index: 1000002;
+  /* Stops the screen scrolling on touch devices while dragging the puck around. */
+  touch-action: none;
+  background: var(--bg-color);
+  border: 2px solid var(--border-color);
+  border-radius: 15px;
+}
